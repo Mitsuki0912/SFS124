@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFS - エコ活動記録</title>
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --light-green: #E8F5E9;
+            --accent-green: #81C784;
+            --bg-color: #F8F9FA;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --white: #FFFFFF;
+            --border-color: #E0E0E0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--white);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        @media (min-width: 481px) {
+            .app-container {
+                border-radius: 24px;
+                border: 1px solid var(--border-color);
+            }
+        }
+
+        /* ヘッダー */
+        header {
+            padding: 16px 20px;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        .total-points {
+            font-size: 14px;
+            background-color: var(--light-green);
+            color: var(--primary-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* メインコンテンツエリア */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 90px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* 共通カード */
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-green);
+        }
+
+        .card-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* イラストアイコン */
+        .eco-icon {
+            width: 44px;
+            height: 44px;
+            background-color: var(--light-green);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .eco-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary-green);
+        }
+
+        .card-text h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .card-text p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .card-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .points-badge {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary-green);
+            background: var(--light-green);
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        /* チェックボックス */
+        .custom-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .custom-checkbox.checked {
+            background-color: var(--primary-green);
+            border-color: var(--primary-green);
+        }
+
+        .custom-checkbox.checked::after {
+            content: '';
+            width: 6px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+        }
+
+        /* 項目追加ボタン（選択ページ） */
+        .add-item-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--white);
+            border: 2px dashed var(--accent-green);
+            color: var(--primary-green);
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .add-item-btn:hover {
+            background-color: var(--light-green);
+        }
+
+        /* モーダル */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--white);
+            width: 100%;
+            max-width: 360px;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .modal-content h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .modal-input:focus {
+            border-color: var(--primary-green);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-cancel {
+            background-color: #F1F3F5;
+            color: var(--text-sub);
+        }
+
+        .btn-confirm {
+            background-color: var(--primary-green);
+            color: var(--white);
+        }
+
+        /* グラフページ */
+        .graph-summary {
+            background: var(--light-green);
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .graph-summary p {
+            font-size: 12px;
+            color: var(--primary-green);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .graph-summary h2 {
+            font-size: 22px;
+            color: var(--primary-green);
+            font-weight: 700;
+        }
+
+        .graph-container {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            height: 220px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            gap: 10px;
+        }
+
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            flex: 1;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 32px;
+            background-color: var(--primary-green);
+            border-radius: 6px 6px 0 0;
+            transition: height 0.4s ease;
+        }
+
+        .bar-label {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 8px;
+        }
+
+        /* カレンダーページ */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-dow {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+            padding-bottom: 4px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .calendar-day:hover {
+            border-color: var(--primary-green);
+        }
+
+        .calendar-day.has-photo img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .calendar-day.has-photo span {
+            position: relative;
+            z-index: 2;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            font-weight: bold;
+        }
+
+        /* 状態ページ */
+        .status-header-card {
+            background: linear-gradient(135deg, var(--primary-green), var(--accent-green));
+            color: var(--white);
+            padding: 24px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .status-header-card h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .status-header-card p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .milestone-card {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .milestone-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .milestone-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .milestone-count {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background-color: #F1F3F5;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--primary-green);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* ナビゲーションバー */
+        nav {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            height: 70px;
+            background-color: var(--white);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 500;
+            flex: 1;
+            transition: color 0.2s;
+        }
+
+        .nav-item svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--text-sub);
+            transition: fill 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--primary-green);
+            font-weight: 600;
+        }
+
+        .nav-item.active svg {
+            fill: var(--primary-green);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header>
+            <h1>SFS エコ活動記録</h1>
+            <div class="total-points" id="header-points">合計: 0 pt</div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <div class="content">
+            <!-- 選択ページ -->
+            <div id="page-select" class="page active">
+                <div id="eco-items-container">
+                    <!-- 動的に追加・管理されるエコ活動項目 -->
+                </div>
+                <button class="add-item-btn" id="open-add-modal-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    新しいエコ活動項目を追加する
+                </button>
+            </div>
+
+            <!-- グラフページ -->
+            <div id="page-graph" class="page">
+                <div class="graph-summary">
+                    <p>直近の平均活動回数</p>
+                    <h2 id="average-display">1.4 回 / 日</h2>
+                </div>
+                <div class="graph-container" id="graph-bars">
+                    <!-- グラフのバー -->
+                </div>
+            </div>
+
+            <!-- カレンダーページ -->
+            <div id="page-calendar" class="page">
+                <div class="calendar-header">
+                    <span id="calendar-month-title">2026年 11月</span>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- カレンダー日付セル -->
+                </div>
+            </div>
+
+            <!-- 状態ページ -->
+            <div id="page-status" class="page">
+                <div class="status-header-card">
+                    <h2 id="status-total-count">0 回</h2>
+                    <p>これまでの累計エコ活動回数</p>
+                </div>
+                <div id="milestones-container">
+                    <!-- 進捗カード群 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 項目追加用モーダル -->
+        <div class="modal-overlay" id="add-item-modal">
+            <div class="modal-content">
+                <h3>新しいエコ活動の追加</h3>
+                <input type="text" id="new-item-title" class="modal-input" placeholder="項目名（例：マイバッグ利用）">
+                <input type="text" id="new-item-desc" class="modal-input" placeholder="説明（例：レジ袋を断った）">
+                <input type="number" id="new-item-pts" class="modal-input" placeholder="獲得ポイント（例：10）" value="10">
+                <div class="modal-buttons">
+                    <button class="modal-btn btn-cancel" id="modal-cancel-btn">キャンセル</button>
+                    <button class="modal-btn btn-confirm" id="modal-confirm-btn">追加する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 非表示ファイル入力（写真選択用） -->
+        <input type="file" id="photo-file-input" accept="image/*" style="display: none;">
+
+        <!-- ナビゲーションバー -->
+        <nav>
+            <button class="nav-item active" onclick="switchPage('select', this)">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                選択
+            </button>
+            <button class="nav-item" onclick="switchPage('graph', this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                グラフ
+            </button>
+            <button class="nav-item" onclick="switchPage('calendar', this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+                カレンダー
+            </button>
+            <button class="nav-item" onclick="switchPage('status', this)">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                状態
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // 初期データ（保存データがない場合のデフォルト）
+        let ecoItems = JSON.parse(localStorage.getItem('sfs_eco_items')) || [
+            { id: 1, title: 'マイバッグ利用', desc: 'レジ袋をもらわず買い物した', pts: 15, checked: false },
+            { id: 2, title: 'マイボトル利用', desc: 'ペットボトル飲料を買わずに持参', pts: 15, checked: false },
+            { id: 3, title: 'こまめな節電・消灯', desc: '使っていない部屋の電気・待機電力をオフ', pts: 10, checked: false },
+            { id: 4, title: '食品ロス削減（完食）', desc: '食材を無駄なく使い切り食べ残しゼロ', pts: 15, checked: false },
+            { id: 5, title: '徒歩・自転車移動', desc: '近距離の車利用を控えてエコ移動', pts: 20, checked: false },
+            { id: 6, title: '資源ごみの丁寧な分別の徹底', desc: 'プラ・紙・缶・ペットボトルを正しく分別', pts: 10, checked: false }
+        ];
+
+        let calendarPhotos = JSON.parse(localStorage.getItem('sfs_calendar_photos')) || {};
+        let totalActionsCount = parseInt(localStorage.getItem('sfs_total_actions')) || 0;
+        let activeTargetDay = null;
+
+        // イラストアイコン用の共通SVGテンプレート
+        const defaultSvgIcon = '<svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66c.95-2.37 2.35-5.32 4.29-7.34 2.36 1.48 5.28 1.83 8 .5l-.5-2.5c-2.12.91-4.59.62-6.5-.78C12.5 10.5 14.5 9 17 8z"/></svg>';
+
+        // ページ切り替え
+        function switchPage(pageId, btnElement) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            if (pageId === 'graph') renderGraph();
+            if (pageId === 'calendar') renderCalendar();
+            if (pageId === 'status') renderStatus();
+        }
+
+        // 選択ページの描画
+        function renderSelectPage() {
+            const container = document.getElementById('eco-items-container');
+            container.innerHTML = '';
+
+            let currentPoints = 0;
+
+            ecoItems.forEach((item, index) => {
+                if (item.checked) currentPoints += item.pts;
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-info">
+                        <div class="eco-icon">${defaultSvgIcon}</div>
+                        <div class="card-text">
+                            <h3>${item.title}</h3>
+                            <p>${item.desc}</p>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <span class="points-badge">+${item.pts}pt</span>
+                        <div class="custom-checkbox ${item.checked ? 'checked' : ''}" data-index="${index}"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('header-points').textContent = `合計: ${currentPoints} pt`;
+
+            // チェックボックスのイベント設定
+            container.querySelectorAll('.custom-checkbox').forEach(box => {
+                box.addEventListener('click', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    const wasChecked = ecoItems[idx].checked;
+                    ecoItems[idx].checked = !wasChecked;
+                    
+                    if (!wasChecked) {
+                        totalActionsCount++;
+                    } else {
+                        totalActionsCount = Math.max(0, totalActionsCount - 1);
+                    }
+
+                    localStorage.setItem('sfs_eco_items', JSON.stringify(ecoItems));
+                    localStorage.setItem('sfs_total_actions', totalActionsCount);
+                    renderSelectPage();
+                });
+            });
+        }
+
+        // 新規項目追加モーダル関連
+        const modal = document.getElementById('add-item-modal');
+        document.getElementById('open-add-modal-btn').addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+        document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            const title = document.getElementById('new-item-title').value.trim();
+            const desc = document.getElementById('new-item-desc').value.trim();
+            const pts = parseInt(document.getElementById('new-item-pts').value) || 10;
+
+            if (title) {
+                ecoItems.push({ id: Date.now(), title, desc: desc || 'カスタムエコ活動', pts, checked: false });
+                localStorage.setItem('sfs_eco_items', JSON.stringify(ecoItems));
+                document.getElementById('new-item-title').value = '';
+                document.getElementById('new-item-desc').value = '';
+                modal.style.display = 'none';
+                renderSelectPage();
+            } else {
+                alert('項目名を入力してください');
+            }
+        });
+
+        // グラフページの描画
+        function renderGraph() {
+            const container = document.getElementById('graph-bars');
+            container.innerHTML = '';
+            
+            // 直近7日間のサンプルデータ
+            const days = ['月', '火', '水', '木', '金', '土', '日'];
+            const counts = [1, 3, 2, 0, 2, 4, 2];
+            const maxVal = 5;
+
+            counts.forEach((val, i) => {
+                const group = document.createElement('div');
+                group.className = 'bar-group';
+                const heightPercent = (val / maxVal) * 100;
+                group.innerHTML = `
+                    <div class="bar" style="height: ${heightPercent}%;"></div>
+                    <span class="bar-label">${days[i]}</span>
+                `;
+                container.appendChild(group);
+            });
+        }
+
+        // カレンダーページの描画 ＆ 写真追加機能
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            const dows = ['日', '月', '火', '水', '木', '金', '土'];
+            dows.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'calendar-dow';
+                div.textContent = d;
+                grid.appendChild(div);
+            });
+
+            // 11月のダミーカレンダー（2026年11月基準）
+            // 1日は日曜日スタート（2026年11月1日は日曜日）
+            for (let i = 1; i <= 30; i++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day';
+                
+                const photoKey = `2026-11-${i}`;
+                if (calendarPhotos[photoKey]) {
+                    dayCell.classList.add('has-photo');
+                    dayCell.innerHTML = `<img src="${calendarPhotos[photoKey]}" alt="活動写真"><span>${i}</span>`;
+                } else {
+                    dayCell.innerHTML = `<span>${i}</span>`;
+                }
+
+                // 日付セルをクリックしたら端末の写真（ファイル）選択を開く
+                dayCell.addEventListener('click', () => {
+                    activeTargetDay = photoKey;
+                    document.getElementById('photo-file-input').click();
+                });
+
+                grid.appendChild(dayCell);
+            }
+        }
+
+        // ファイル入力での写真読み込み処理
+        document.getElementById('photo-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && activeTargetDay) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    calendarPhotos[activeTargetDay] = uploadEvent.target.result;
+                    localStorage.setItem('sfs_calendar_photos', JSON.stringify(calendarPhotos));
+                    renderCalendar();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 状態ページの描画（活動回数50回ベース）
+        function renderStatus() {
+            document.getElementById('status-total-count').textContent = `${totalActionsCount} 回`;
+
+            const milestonesContainer = document.getElementById('milestones-container');
+            milestonesContainer.innerHTML = '';
+
+            const targetMax = 50; // 活動50回で設定
+            const progressPercent = Math.min(100, (totalActionsCount / targetMax) * 100);
+
+            milestonesContainer.innerHTML = `
+                <div class="milestone-card">
+                    <div class="milestone-top">
+                        <span class="milestone-title">エコ活動 50回達成チャレンジ</span>
+                        <span class="milestone-count">${totalActionsCount} / ${targetMax} 回</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 初期化実行
+        renderSelectPage();
+    </script>
+</body>
+</html>
